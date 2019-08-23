@@ -1,0 +1,122 @@
+swagger: '2.0'
+info:
+  version: '0.3'
+  title: Sender Service
+  description: 'A service that sends emails and OTPs'
+
+host: vpc.teamo.work
+basePath: /v1/sender/
+
+produces:
+- application/json
+
+consumes:
+- application/json
+
+security:
+# FIXME
+
+paths:
+  /email:
+    post:
+      summary: Send email
+      tags:
+      - email
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          $ref: '#/definitions/EmailMessage'
+      responses:
+        200:
+          description: "Success"
+        400:
+          description: "Invalid request JSON"
+
+  /otp:
+    post:
+      summary: Send OTP
+      tags:
+      - otp
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          $ref: '#/definitions/OTPMessage'
+      responses:
+        200:
+          description: "Success"
+        400:
+          description: "Invalid request JSON"
+
+definitions:
+  Base:
+    properties:
+      email:
+        type: string
+        example: "email@example.com"
+      username:
+        type: string
+        example: "username"
+      link:
+        type: string
+        example: "http://example.com"
+
+  Device:
+    properties:
+      device:
+        type: string
+      location:
+        type: string
+      ip:
+        type: string
+
+  Universal:
+    properties:
+      email:
+        type: string
+      subject:
+        type: string
+      text:
+        type: string
+      HTML:
+        type: string
+
+  MsgData:
+    properties:
+      base:
+        $ref: '#/definitions/Base'
+      device:
+        $ref: '#/definitions/Device'
+      universal:
+        $ref: '#/definitions/Universal'
+
+  EmailMessage:
+    properties:
+      type:
+        type: string
+        enum:
+        - LetterUniversal
+        - LetterAdminSignUp
+        - LetterUserEmailVerify
+        - LetterUserRecovery
+        - LetterUserNewDevice
+        description: LetterType
+      data:
+        $ref: '#/definitions/MsgData'
+
+  OTPMessage:
+    properties:
+      phone:
+        type: string
+      code:
+        type: string
+      provider:
+        type: integer
+
+securityDefinitions:
+# FIXME

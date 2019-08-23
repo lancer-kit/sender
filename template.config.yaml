@@ -1,0 +1,56 @@
+api:
+  host: localhost
+  port: 2490
+  api_request_timeout: 60
+
+log:
+  app_name: sender
+  level: debug
+  add_trace: true
+  sentry: ""
+  json: false
+
+nats:
+  host: 127.0.0.1
+  port: 4222
+
+providers:
+  email:
+    mailgun:
+      available: true
+      domain: sandboxb923d8c792d64573b5599a7cf771d88a.mailgun.org
+      sender: noreply@sandboxb923d8c792d64573b5599a7cf771d88a.mailgun.org
+      private_key: 5b6420c7c98048ce1b821be67fd65481-16ffd509-aa5f6463
+      public_key: pubkey-484008cfd3799e5b52e296749f9c96b5
+    sendgrid:
+      available: false
+      host: https://api.sendgrid.com
+      endpoint: /v3/mail/send
+      private_key: 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
+      sender: cssham03@gmail.com
+      sender_name: dima
+    smtp:
+      available: false
+      host: smtp.gmail.com
+      port: 587
+      from: email
+      password: pass
+  sms:
+    whatsapp:
+      available: true
+      api_url: https://eu1.whatsapp.chat-api.com/instance275/message?token=
+      api_key: 40ea56e4aff28d
+    twilio:
+      available: true
+      account_sid: <your_account_sid>
+      auth_token: <your_auth_token>
+      api_url: "https://api.twilio.com/2010-04-01/Accounts/<your_account_sid>/Messages.json"
+      sender: <sender_name>
+    viber:
+      available: true
+      api_url: http://ovh-1.ooo.ua:3039/receiveMessage
+
+workers:
+  - api-server
+  - async-api-email
+  - async-api-sms
