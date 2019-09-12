@@ -1,55 +1,51 @@
 package asyncapi
 
 import (
-	"context"
 	"encoding/json"
 
-	"github.com/lancer-kit/sender/config"
-
 	"github.com/lancer-kit/armory/natsx"
+	"github.com/lancer-kit/sender/config"
 	"github.com/lancer-kit/sender/models/email"
 	emailp "github.com/lancer-kit/sender/repo/providers/email"
 	"github.com/lancer-kit/sender/repo/providers/email/mailgun"
 	"github.com/lancer-kit/sender/repo/providers/email/sendgrid"
 	"github.com/lancer-kit/sender/repo/providers/email/smtp"
+	"github.com/lancer-kit/uwe/v2"
 	"github.com/nats-io/go-nats"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 type EmailService struct {
-	ctx    context.Context
 	cfg    *config.Cfg
 	logger *logrus.Entry
 	sender emailp.Sender
 }
 
-func NewEmail(ctx context.Context, cfg *config.Cfg, logger *logrus.Entry) *EmailService {
+func NewEmail(cfg *config.Cfg, logger *logrus.Entry) uwe.Worker {
 	return &EmailService{
 		logger: logger.WithField("worker", config.WorkerAsyncAPIEmail),
 		cfg:    cfg,
-		ctx:    ctx,
 	}
 }
 
 func (s *EmailService) Init() error {
 	if s.initEmailProvider(); s.sender == nil {
-		return errors.New("sms providers does not set")
+		return errors.New("email providers does not set")
 	}
 
 	return nil
 }
 
-func (s *EmailService) Run(errChan chan<- error) {
+func (s *EmailService) Run(ctx uwe.Context) error {
 	bus := make(chan *nats.Msg)
 	sub, err := natsx.Subscribe(email.Topic, bus)
 	if err != nil {
-		errChan <- errors.Wrap(err, "unable to open subscription")
-		return
+		return errors.Wrap(err, "unable to open subscription")
 	}
 	defer func() {
 		if err = sub.Unsubscribe(); err != nil {
-			errChan <- errors.Wrap(err, "unable to unsubscribe")
+			s.logger.WithError(err).Info("unable to unsubscribe")
 		}
 	}()
 
@@ -64,16 +60,15 @@ func (s *EmailService) Run(errChan chan<- error) {
 			s.logger.Debug("got new email message")
 
 			if err = s.processMsg(msg.Data); err != nil {
-				errChan <- errors.Wrap(err, "msg processing failed")
+				s.logger.WithError(err).Error("message processing failed")
 				continue
 			}
 
 			s.logger.Debug("email was sent")
 
-		case <-s.ctx.Done():
-			s.logger.Info("email async api gracefully stopped")
-			return
-
+		case <-ctx.Done():
+			s.logger.Info("Async-API-Email gracefully stopped")
+			return nil
 		}
 	}
 }

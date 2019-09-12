@@ -7,22 +7,23 @@ import (
 	"github.com/lancer-kit/armory/api/httpx"
 	"github.com/lancer-kit/sender/models/email"
 	"github.com/lancer-kit/sender/models/sms"
+	"github.com/lancer-kit/sender/repo/client"
 	"github.com/pkg/errors"
 )
 
-type client struct {
+type cli struct {
 	conn httpx.Client
 	url  string
 }
 
-func New(url string) (c *client) {
-	return &client{
+func New(url string) (c client.Client) {
+	return &cli{
 		url:  url,
 		conn: httpx.NewXClient(),
 	}
 }
 
-func (c client) SendEmail(msg email.Message) (err error) {
+func (c cli) SendEmail(msg email.Message) (err error) {
 	if err = msg.Validate(); err != nil {
 		return errors.Wrap(err, "validation failed")
 	}
@@ -39,7 +40,7 @@ func (c client) SendEmail(msg email.Message) (err error) {
 	return nil
 }
 
-func (c client) SendSms(msg sms.Message) (err error) {
+func (c cli) SendSms(msg sms.Message) (err error) {
 	if err = msg.Validate(); err != nil {
 		return errors.Wrap(err, "validation failed")
 	}

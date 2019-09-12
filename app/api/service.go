@@ -1,8 +1,6 @@
 package api
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -20,12 +18,13 @@ import (
 	"github.com/lancer-kit/sender/repo/providers/sms/twilio"
 	"github.com/lancer-kit/sender/repo/providers/sms/viber"
 	"github.com/lancer-kit/sender/repo/providers/sms/whatsapp"
+	"github.com/lancer-kit/uwe/v2"
+	"github.com/lancer-kit/uwe/v2/presets/api"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 type Service struct {
-	ctx    context.Context
 	cfg    *config.Cfg
 	logger *logrus.Entry
 
@@ -33,12 +32,12 @@ type Service struct {
 	smsSenders  map[sms.Provider]smsp.Sender
 }
 
-func New(ctx context.Context, cfg *config.Cfg, logger *logrus.Entry) *Service {
+func New(cfg *config.Cfg, logger *logrus.Entry) *Service {
 	return &Service{
 		logger: logger.WithField("worker", config.WorkerAPIServer),
-		ctx:    ctx,
 		cfg:    cfg,
 	}
+
 }
 
 func (s *Service) Init() error {
@@ -53,26 +52,20 @@ func (s *Service) Init() error {
 	return nil
 }
 
-func (s *Service) Run(errChan chan<- error) {
-	router := s.router(s.logger, s.cfg.API.APIRequestTimeout)
-	addr := fmt.Sprintf("%s:%d", s.cfg.API.Host, s.cfg.API.Port)
-	server := &http.Server{Addr: addr, Handler: router}
-
-	go func() {
-		s.logger.Info("Starting API Service at: ", addr)
-
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errChan <- errors.Wrap(err, "server failed")
-		}
-	}()
-
-	<-s.ctx.Done()
-	s.logger.Info("Shutting down the API Service...")
-	if err := server.Shutdown(s.ctx); err != nil {
-		errChan <- errors.Wrap(err, "shutdown failed")
+func (s *Service) Run(ctx uwe.Context) error {
+	server := api.NewServer(
+		api.Config{
+			Host: s.cfg.API.Host,
+			Port: s.cfg.API.Port,
+		},
+		s.router(s.cfg.API.APIRequestTimeout),
+	)
+	s.logger.Info("Starting API Service")
+	if err := server.Run(ctx); err != nil {
+		return err
 	}
-
-	s.logger.Info("API Service gracefully stopped")
+	s.logger.Info("API gracefully stopped")
+	return nil
 }
 
 func (s *Service) initSMSProviders() {
@@ -99,10 +92,10 @@ func (s *Service) initEmailProvider() {
 	}
 }
 
-func (s *Service) router(logger *logrus.Entry, requestTimeout int) chi.Router {
+func (s *Service) router(requestTimeout int) http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(log.NewRequestLogger(logger.Logger))
+	r.Use(log.NewRequestLogger(s.logger.Logger))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
@@ -116,7 +109,7 @@ func (s *Service) router(logger *logrus.Entry, requestTimeout int) chi.Router {
 
 	r.Route("/v1/sender", func(r chi.Router) {
 		h := &handler{
-			logger:      logger,
+			logger:      s.logger,
 			smsSenders:  s.smsSenders,
 			emailSender: s.emailSender,
 		}

@@ -3,6 +3,7 @@ package mailgun
 import (
 	"github.com/lancer-kit/sender/config"
 	"github.com/lancer-kit/sender/models/email"
+	emailp "github.com/lancer-kit/sender/repo/providers/email"
 	"github.com/pkg/errors"
 	"gopkg.in/mailgun/mailgun-go.v1"
 )
@@ -12,7 +13,7 @@ type sender struct {
 	conn mailgun.Mailgun
 }
 
-func New(cfg *config.Mailgun) *sender {
+func New(cfg *config.Mailgun) emailp.Sender {
 	return &sender{
 		cfg:  cfg,
 		conn: mailgun.NewMailgun(cfg.Domain, cfg.PrivateKey, cfg.PublicKey),

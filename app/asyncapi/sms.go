@@ -1,7 +1,6 @@
 package asyncapi
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/lancer-kit/armory/natsx"
@@ -11,41 +10,41 @@ import (
 	"github.com/lancer-kit/sender/repo/providers/sms/twilio"
 	"github.com/lancer-kit/sender/repo/providers/sms/viber"
 	"github.com/lancer-kit/sender/repo/providers/sms/whatsapp"
+	"github.com/lancer-kit/uwe/v2"
 	"github.com/nats-io/go-nats"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
 type SmsService struct {
-	ctx       context.Context
 	cfg       *config.Cfg
 	logger    *logrus.Entry
 	providers map[sms.Provider]smsp.Sender
 }
 
-func NewSms(ctx context.Context, cfg *config.Cfg, logger *logrus.Entry) *SmsService {
+func NewSms(cfg *config.Cfg, logger *logrus.Entry) *SmsService {
 	return &SmsService{
 		logger: logger.WithField("worker", config.WorkerAsyncAPISms),
-		ctx:    ctx,
 		cfg:    cfg,
 	}
 }
 
 func (s *SmsService) Init() error {
-
+	if s.initSMSProviders(); len(s.providers) == 0 {
+		return errors.New("sms providers does not set")
+	}
 	return nil
 }
 
-func (s *SmsService) Run(errChan chan<- error) {
+func (s *SmsService) Run(ctx uwe.Context) error {
 	bus := make(chan *nats.Msg)
 	sub, err := natsx.Subscribe(sms.Topic, bus)
 	if err != nil {
-		errChan <- errors.Wrap(err, "unable to open subscription")
-		return
+		return errors.Wrap(err, "unable to open subscription")
 	}
 	defer func() {
 		if err = sub.Unsubscribe(); err != nil {
-			errChan <- errors.Wrap(err, "unable to unsubscribe")
+			s.logger.WithError(err).Info("unable to unsubscribe")
 		}
 	}()
 
@@ -60,15 +59,15 @@ func (s *SmsService) Run(errChan chan<- error) {
 			s.logger.Debug("got new sms message")
 
 			if err = s.processMsg(msg.Data); err != nil {
-				errChan <- errors.Wrap(err, "msg processing failed")
+				s.logger.WithError(err).Error("message processing failed")
 				continue
 			}
 
 			s.logger.Debug("sms was sent")
 
-		case <-s.ctx.Done():
-			s.logger.Info("async api sms gracefully stopped")
-			return
+		case <-ctx.Done():
+			s.logger.Info("Async-API-SMS gracefully stopped")
+			return nil
 		}
 	}
 }
