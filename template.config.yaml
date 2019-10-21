@@ -18,28 +18,28 @@ providers:
   email:
     mailgun:
       available: true
-      domain: sandboxb923d8c792d64573b5599a7cf771d88a.mailgun.org
-      sender: noreply@sandboxb923d8c792d64573b5599a7cf771d88a.mailgun.org
-      private_key: 5b6420c7c98048ce1b821be67fd65481-16ffd509-aa5f6463
-      public_key: pubkey-484008cfd3799e5b52e296749f9c96b5
+      domain: <your_mg_domain>.mailgun.org
+      sender: <your_sender_address>
+      private_key: <your_private_key>
+      public_key: <your_public_key>
     sendgrid:
       available: false
       host: https://api.sendgrid.com
       endpoint: /v3/mail/send
-      private_key: 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
-      sender: cssham03@gmail.com
-      sender_name: dima
-    smtp:
+      private_key: <your_private_key>
+      sender: <your_sender_email>
+      sender_name: <your_sender_name>
+      smtp:
       available: false
       host: smtp.gmail.com
       port: 587
-      from: email
-      password: pass
+      from: <your_email>
+      password: <your_password>
   sms:
     whatsapp:
       available: true
       api_url: https://eu1.whatsapp.chat-api.com/instance275/message?token=
-      api_key: 40ea56e4aff28d
+      api_key: <your_account_key>
     twilio:
       available: true
       account_sid: <your_account_sid>
