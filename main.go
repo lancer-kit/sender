@@ -22,7 +22,9 @@ func main() {
 		a.Commands,
 		serve(),
 	)
-	a.Run(os.Args)
+	if err := a.Run(os.Args); err != nil {
+		log.Default.WithError(err).Fatal("cannot start app")
+	}
 }
 
 func serve() cli.Command {

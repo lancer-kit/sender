@@ -5,28 +5,29 @@ import (
 
 	"github.com/lancer-kit/sender/models/email"
 	"github.com/lancer-kit/sender/models/sms"
+	"github.com/lancer-kit/sender/repo/client"
 	"github.com/nats-io/go-nats"
 	"github.com/pkg/errors"
 )
 
-type client struct {
+type cli struct {
 	conn *nats.Conn
 	url  string
 }
 
-func New(url string) (c *client, err error) {
-	c = &client{
+func New(url string) (client.Client, error) {
+	c := &cli{
 		url: url,
 	}
 
-	if err = c.ensure(); err != nil {
+	if err := c.ensure(); err != nil {
 		return nil, errors.Wrap(err, "failed nats ensure")
 	}
 
 	return c, nil
 }
 
-func (c client) SendEmail(msg email.Message) (err error) {
+func (c cli) SendEmail(msg email.Message) (err error) {
 	if err = msg.Validate(); err != nil {
 		return errors.Wrap(err, "validation failed")
 	}
@@ -38,7 +39,7 @@ func (c client) SendEmail(msg email.Message) (err error) {
 	return nil
 }
 
-func (c client) SendSms(msg sms.Message) (err error) {
+func (c cli) SendSms(msg sms.Message) (err error) {
 	if err = msg.Validate(); err != nil {
 		return errors.Wrap(err, "validation failed")
 	}
@@ -50,7 +51,7 @@ func (c client) SendSms(msg sms.Message) (err error) {
 	return nil
 }
 
-func (c *client) ensure() error {
+func (c *cli) ensure() error {
 	var err error
 
 	if c.url == "" {
@@ -64,7 +65,7 @@ func (c *client) ensure() error {
 	return nil
 }
 
-func (c *client) publishJSON(topic string, msg interface{}) error {
+func (c *cli) publishJSON(topic string, msg interface{}) error {
 	raw, err := json.Marshal(msg)
 	if err != nil {
 		return err

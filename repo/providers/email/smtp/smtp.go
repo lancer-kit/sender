@@ -6,6 +6,7 @@ import (
 
 	"github.com/lancer-kit/sender/config"
 	"github.com/lancer-kit/sender/models/email"
+	emailp "github.com/lancer-kit/sender/repo/providers/email"
 	"github.com/pkg/errors"
 )
 
@@ -18,7 +19,7 @@ type sender struct {
 	cfg *config.SMTP
 }
 
-func New(cfg *config.SMTP) *sender {
+func New(cfg *config.SMTP) emailp.Sender {
 	return &sender{
 		cfg: cfg,
 	}

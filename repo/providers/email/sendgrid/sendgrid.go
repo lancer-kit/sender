@@ -5,6 +5,7 @@ import (
 
 	"github.com/lancer-kit/sender/config"
 	"github.com/lancer-kit/sender/models/email"
+	emailp "github.com/lancer-kit/sender/repo/providers/email"
 	"github.com/pkg/errors"
 	"github.com/sendgrid/rest"
 	"github.com/sendgrid/sendgrid-go"
@@ -15,7 +16,7 @@ type sender struct {
 	cfg *config.Sendgrid
 }
 
-func New(cfg *config.Sendgrid) *sender {
+func New(cfg *config.Sendgrid) emailp.Sender {
 	return &sender{
 		cfg: cfg,
 	}
